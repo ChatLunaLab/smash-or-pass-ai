@@ -86,12 +86,16 @@ export function apply(ctx: Context, config: Config) {
                     session,
                     elements
                 )
-            const selectImages = (
-                transformedMessage.additional_kwargs?.['images'] as string[]
-            )?.map((base64) => {
-                const buffer = Buffer.from(base64, 'base64')
-                return h.image(buffer, 'image/png')
-            })
+            const selectImages = config.imageOutput
+                ? (
+                      transformedMessage.additional_kwargs?.[
+                          'images'
+                      ] as string[]
+                  )?.map((base64) => {
+                      const buffer = Buffer.from(base64, 'base64')
+                      return h.image(buffer, 'image/png')
+                  })
+                : []
 
             if (!model) return '没有加载模型'
 
@@ -143,6 +147,7 @@ export interface Config {
     prompt: string
     safeModePrompt: string
     messageForward: boolean
+    imageOutput: boolean
     safeMode: boolean
     replyTemplate: string
 }
@@ -223,7 +228,7 @@ export const Config = Schema.intersect([
         safeMode: Schema.boolean()
             .description('是否启用安全模式')
             .default(true),
-
+        imageOutput: Schema.boolean().description('是否输出图片').default(true),
         replyTemplate: Schema.string()
             .role('textarea')
             .default(

@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-chatluna-smash-or-pass-ai",
   "description": "Smash or Pass AI powered by the large language model in chatluna",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "type": "module",
   "main": "lib/index.cjs",
   "module": "lib/index.mjs",
