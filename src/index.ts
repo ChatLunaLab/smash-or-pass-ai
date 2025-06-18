@@ -1,13 +1,51 @@
-/* eslint-disable @typescript-eslint/no-namespace */
-/* eslint-disable max-len */
 import { Context, h, Schema } from 'koishi'
-
 import { PlatformService } from 'koishi-plugin-chatluna/llm-core/platform/service'
 import { ModelType } from 'koishi-plugin-chatluna/llm-core/platform/types'
 import { parseRawModelName } from 'koishi-plugin-chatluna/llm-core/utils/count_tokens'
 import { ChatLunaChatModel } from 'koishi-plugin-chatluna/llm-core/platform/model'
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
 import { getMessageContent } from 'koishi-plugin-chatluna/utils/string'
+
+type ParseResult = {
+    verdict: string
+    rating: number
+    explanation: string
+} | null
+
+const tryParse = (text: string): ParseResult => {
+    try {
+        return JSON.parse(text.trim())
+    } catch {
+        return null
+    }
+}
+
+const extractors = [
+    (text: string) => text.trim(),
+    (text: string) =>
+        text.replace(/```(?:json|JSON)?\s*/g, '').replace(/```\s*$/g, ''),
+    (text: string) => {
+        const start = text.indexOf('{'),
+            end = text.lastIndexOf('}')
+        return start !== -1 && end !== -1 && start < end
+            ? text.substring(start, end + 1)
+            : text
+    },
+    (text: string) => {
+        const start = text.indexOf('{')
+        if (start === -1) return text
+        let count = 0,
+            end = -1
+        for (let i = start; i < text.length; i++) {
+            if (text[i] === '{') count++
+            else if (text[i] === '}' && --count === 0) {
+                end = i
+                break
+            }
+        }
+        return end !== -1 ? text.substring(start, end + 1) : text
+    }
+]
 
 export function apply(ctx: Context, config: Config) {
     let model: ChatLunaChatModel
@@ -21,113 +59,88 @@ export function apply(ctx: Context, config: Config) {
     const getModelNames = (service: PlatformService) =>
         service.getAllModels(ModelType.llm).map((m) => Schema.const(m))
 
-    const parseLLMResult = (result: string) => {
-        try {
-            let cleanResult = result.trim()
-
-            // 移除代码块标记
-            cleanResult = cleanResult
-                .replace(/```(?:json|JSON)?\s*/g, '')
-                .replace(/```\s*$/g, '')
-
-            // 寻找 JSON 对象的开始和结束位置
-            const startIndex = cleanResult.indexOf('{')
-            const endIndex = cleanResult.lastIndexOf('}')
-
-            if (
-                startIndex === -1 ||
-                endIndex === -1 ||
-                startIndex >= endIndex
-            ) {
-                return null
-            }
-
-            // 提取 JSON 部分
-            const jsonString = cleanResult.substring(startIndex, endIndex + 1)
-
-            return JSON.parse(jsonString) as {
-                verdict: string
-                rating: number
-                explanation: string
-            }
-        } catch (e) {
-            ctx.logger.error(e)
-            return null
+    const parseLLMResult = (result: string): ParseResult => {
+        console.log(result)
+        for (const extractor of extractors) {
+            const extracted = extractor(result)
+            const parsed = tryParse(extracted)
+            if (parsed) return parsed
         }
+        return null
     }
 
     ctx.command('fuckluna <message:text>').action(
         async ({ session }, message) => {
-            if (message == null || message === '') {
-                return
-            }
+            if (!message) return
 
             const elements = h.parse(message)
+            const atElement = h.select(elements, 'at').at(0)
+
+            if (atElement) {
+                const user = await session.bot.getUser(atElement.attrs['id'])
+                elements[0] = h.image(user.avatar)
+            }
 
             const transformedMessage =
                 await ctx.chatluna.messageTransformer.transform(
                     session,
                     elements
                 )
+            const selectImages = (
+                transformedMessage.additional_kwargs?.['images'] as string[]
+            )?.map((base64) => h.image(base64))
 
-            const humanMessage = new HumanMessage({
-                content: transformedMessage.content,
-                name: transformedMessage.name,
-                id: session.userId,
-                additional_kwargs: {
-                    ...transformedMessage.additional_kwargs
-                }
-            })
+            if (!model) return '没有加载模型'
 
-            if (model == null) {
-                return '没有加载模型'
-            }
-
-            const prompt = new SystemMessage(config.prompt)
-
-            const result = await model.invoke([prompt, humanMessage])
+            const prompt =
+                config.prompt +
+                (config.safeMode ? `\n\n${config.safeModePrompt}` : '')
+            const result = await model.invoke([
+                new SystemMessage(prompt),
+                new HumanMessage({
+                    content: transformedMessage.content,
+                    name: transformedMessage.name,
+                    id: session.userId,
+                    additional_kwargs: transformedMessage.additional_kwargs
+                })
+            ])
 
             const parsedResult = parseLLMResult(
                 getMessageContent(result.content)
             )
-
-            if (parsedResult == null) {
-                return '解析结果失败'
-            }
+            if (!parsedResult) return '解析结果失败'
 
             const { verdict, rating, explanation } = parsedResult
-
             const reply = config.replyTemplate
                 .replaceAll('{verdict}', verdict)
                 .replaceAll('{rating}', rating.toString())
                 .replaceAll('{explanation}', explanation)
 
-            await session.send(reply)
+            const messageArgs = [
+                config.messageForward ? { forward: true } : {},
+                ...(selectImages || []),
+                h.text(reply)
+            ] as const
+            await session.send(h('message', ...messageArgs))
         }
     )
 
-    ctx.on('chatluna/model-added', (service) => {
+    const updateSchema = (service: PlatformService) => {
         ctx.schema.set('model', Schema.union(getModelNames(service)))
         loadModel()
-    })
+    }
 
-    ctx.on('chatluna/model-removed', (service) => {
-        ctx.schema.set('model', Schema.union(getModelNames(service)))
-        loadModel()
-    })
-
-    ctx.on('ready', () => {
-        ctx.schema.set(
-            'model',
-            Schema.union(getModelNames(ctx.chatluna.platform))
-        )
-        loadModel()
-    })
+    ctx.on('chatluna/model-added', updateSchema)
+    ctx.on('chatluna/model-removed', updateSchema)
+    ctx.on('ready', () => updateSchema(ctx.chatluna.platform))
 }
 
 export interface Config {
     model: string
     prompt: string
+    safeModePrompt: string
+    messageForward: boolean
+    safeMode: boolean
     replyTemplate: string
 }
 
@@ -176,7 +189,38 @@ export const Config = Schema.intersect([
                 For "冲" verdicts: Write a minimum of 15 explicit, vulgar sentences in Chinese.
                 For "不冲" verdicts: Just write "操，不行。"`
             )
+
             .description('主要判断提示词'),
+        safeModePrompt: Schema.string()
+            .role('textarea')
+            .default(
+                `**重要安全规则：在输出任何内容前，必须对所有违规词语进行替换处理**
+
+审查规则：
+1. 对于单个违规字/词（如：操、草、干、fuck等）：替换为 "第一个字符+***"
+   - 例：操 → 操***，草 → 草***，干 → 干***
+2. 对于较长的违规词语（如：他妈的、去你的等）：完全替换为 "***"
+3. 对于性相关词汇：一律替换为 "***"
+4. 对于身体隐私部位词汇：替换为 "***"
+
+替换示例：
+- "操，不行" → "操***，不行"
+- "这真他妈的" → "这真***"
+- "去你的" → "去***"
+- "胸部" → "***"
+- "下体" → "***"
+
+**在生成任何回复前，必须先进行上述替换，确保输出内容符合安全标准。**
+**即使原始判断是负面的，也要用委婉的方式表达，避免直接的粗俗用语。**`
+            )
+            .description('安全模式提示词'),
+        messageForward: Schema.boolean()
+            .description('是否启用合并转发')
+            .default(true),
+        safeMode: Schema.boolean()
+            .description('是否启用安全模式')
+            .default(true),
+
         replyTemplate: Schema.string()
             .role('textarea')
             .default(
