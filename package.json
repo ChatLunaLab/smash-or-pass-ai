@@ -1,0 +1,107 @@
+{
+  "name": "koishi-plugin-chatluna-smash-or-pass-ai",
+  "description": "Smash or Pass AI powered by the large language model in chatluna",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "lib/index.cjs",
+  "module": "lib/index.mjs",
+  "typings": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./lib/index.mjs",
+      "require": "./lib/index.cjs",
+      "types": "./lib/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "dist",
+    "resources"
+  ],
+  "license": "AGPL-3.0",
+  "keywords": [
+    "chatbot",
+    "koishi",
+    "plugin",
+    "service",
+    "chatgpt",
+    "chatluna",
+    "preset",
+    "translator"
+  ],
+  "author": "dingyi222666 <dingyi222666@foxmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ChatLunaLab/chatluna-smash-or-pass-ai.git",
+    "directory": "."
+  },
+  "bugs": {
+    "url": "https://github.com/ChatLunaLab/chatluna-smash-or-pass-ai/issues"
+  },
+  "homepage": "https://github.com/ChatLunaLab/chatluna-smash-or-pass-ai#readme",
+  "dependencies": {
+    "@langchain/core": "^0.3.43"
+  },
+  "resolutions": {
+    "@langchain/core": "0.3.43",
+    "js-tiktoken": "npm:@dingyi222666/js-tiktoken@^1.0.19"
+  },
+  "overrides": {
+    "@langchain/core": "0.3.43",
+    "js-tiktoken": "npm:@dingyi222666/js-tiktoken@^1.0.19"
+  },
+  "pnpm": {
+    "overrides": {
+      "@langchain/core": "0.3.43",
+      "js-tiktoken": "npm:@dingyi222666/js-tiktoken@^1.0.19"
+    }
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.18.1-alpha.3",
+    "@typescript-eslint/parser": "^8.29.1-alpha.3",
+    "atsc": "^1.2.2",
+    "esbuild": "^0.25.2",
+    "esbuild-register": "^3.6.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-standard": "^17.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-n": "^16.6.2",
+    "eslint-plugin-prettier": "^5.2.6",
+    "eslint-plugin-promise": "^7.2.1",
+    "koishi": "^4.18.7",
+    "yakumo": "^1.0.0",
+    "yakumo-esbuild": "^1.0.0",
+    "yakumo-mocha": "^1.0.0",
+    "yakumo-tsc": "^1.0.0"
+  },
+  "peerDependencies": {
+    "koishi": "^4.18.7",
+    "koishi-plugin-chatluna": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "yarn yakumo build",
+    "bump": "yarn yakumo version",
+    "dep": "yarn yakumo upgrade",
+    "pub": "yarn yakumo publish",
+    "lint": "yarn eslint src --ext=ts",
+    "lint-fix": "yarn eslint src --ext=ts --fix"
+  },
+  "koishi": {
+    "description": {
+      "zh": "上传一张图片，让 LLM 根据其吸引力来评判能不能冲"
+    },
+    "service": {
+      "required": [
+        "chatluna"
+      ],
+      "implements": [
+        "translator"
+      ]
+    }
+  }
+}
