@@ -91,10 +91,7 @@ export function apply(ctx: Context, config: Config) {
                       transformedMessage.additional_kwargs?.[
                           'images'
                       ] as string[]
-                  )?.map((base64) => {
-                      const buffer = Buffer.from(base64, 'base64')
-                      return h.image(buffer, 'image/png')
-                  })
+                  )?.map((base64) => h.image(base64))
                 : []
 
             if (!model) return '没有加载模型'
