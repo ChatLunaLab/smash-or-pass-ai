@@ -4,7 +4,7 @@
 
 _上传一张图片，让 LLM 根据其吸引力来评判能不能冲_
 
-## [![npm](https://img.shields.io/npm/v/koishi-plugin-chatluna-smash-or-pass-ai)](https://www.npmjs.com/package/koishi-plugin-chatluna-smash-or-pass-ai) [![npm](https://img.shields.io/npm/dm/koishi-plugin-chatluna-smash-or-pass-ai)](https://www.npmjs.com/package/koishi-plugin-chatluna-smash-or-pass-ai) ![node version](https://img.shields.io/badge/node-%3E=18-green) ![github top language](https://img.shields.io/github/languages/top/ChatLunaLab/chatluna-smash-or-pass-ai?logo=github)
+## [![npm](https://img.shields.io/npm/v/koishi-plugin-chatluna-smash-or-pass-ai)](https://www.npmjs.com/package/koishi-plugin-chatluna-smash-or-pass-ai) [![npm](https://img.shields.io/npm/dm/koishi-plugin-chatluna-smash-or-pass-ai)](https://www.npmjs.com/package/koishi-plugin-chatluna-smash-or-pass-ai) ![node version](https://img.shields.io/badge/node-%3E=18-green) ![github top language](https://img.shields.io/github/languages/top/ChatLunaLab/smash-or-pass-ai?logo=github)
 
 </div>
 

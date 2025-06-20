@@ -73,7 +73,10 @@ export function apply(ctx: Context, config: Config) {
         async ({ session }, message) => {
             if (!message) return
 
-            const elements = h.parse(message)
+            const elements =
+                session.quote?.elements != null
+                    ? session.quote.elements
+                    : h.parse(message)
             const atElement = h.select(elements, 'at').at(0)
 
             if (atElement && session.quote == null) {
