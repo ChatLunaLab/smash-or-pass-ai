@@ -76,7 +76,7 @@ export function apply(ctx: Context, config: Config) {
             const elements = h.parse(message)
             const atElement = h.select(elements, 'at').at(0)
 
-            if (atElement) {
+            if (atElement && session.quote == null) {
                 const user = await session.bot.getUser(atElement.attrs['id'])
                 elements[0] = h.image(user.avatar)
             }
@@ -99,6 +99,7 @@ export function apply(ctx: Context, config: Config) {
             const prompt =
                 config.prompt +
                 (config.safeMode ? `\n\n${config.safeModePrompt}` : '')
+
             const result = await model.invoke([
                 new SystemMessage(prompt),
                 new HumanMessage({

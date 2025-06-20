@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-chatluna-smash-or-pass-ai",
   "description": "Smash or Pass AI powered by the large language model in chatluna",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "type": "module",
   "main": "lib/index.cjs",
   "module": "lib/index.mjs",
@@ -33,13 +33,13 @@
   "author": "dingyi222666 <dingyi222666@foxmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ChatLunaLab/chatluna-smash-or-pass-ai.git",
+    "url": "https://github.com/ChatLunaLab/smash-or-pass-ai.git",
     "directory": "."
   },
   "bugs": {
-    "url": "https://github.com/ChatLunaLab/chatluna-smash-or-pass-ai/issues"
+    "url": "https://github.com/ChatLunaLab/smash-or-pass-ai/issues"
   },
-  "homepage": "https://github.com/ChatLunaLab/chatluna-smash-or-pass-ai#readme",
+  "homepage": "https://github.com/ChatLunaLab/smash-or-pass-ai#readme",
   "dependencies": {
     "@langchain/core": "^0.3.43"
   },
