@@ -60,12 +60,12 @@ export function apply(ctx: Context, config: Config) {
         service.getAllModels(ModelType.llm).map((m) => Schema.const(m))
 
     const parseLLMResult = (result: string): ParseResult => {
-        console.log(result)
         for (const extractor of extractors) {
             const extracted = extractor(result)
             const parsed = tryParse(extracted)
             if (parsed) return parsed
         }
+        ctx.logger.error(`Parse result failed: ${result}`)
         return null
     }
 
