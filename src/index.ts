@@ -4,7 +4,10 @@ import { ModelType } from 'koishi-plugin-chatluna/llm-core/platform/types'
 import { parseRawModelName } from 'koishi-plugin-chatluna/llm-core/utils/count_tokens'
 import { ChatLunaChatModel } from 'koishi-plugin-chatluna/llm-core/platform/model'
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
-import { getMessageContent } from 'koishi-plugin-chatluna/utils/string'
+import {
+    getMessageContent,
+    isMessageContentImageUrl
+} from 'koishi-plugin-chatluna/utils/string'
 
 type ParseResult = {
     verdict: string
@@ -87,14 +90,23 @@ export function apply(ctx: Context, config: Config) {
             const transformedMessage =
                 await ctx.chatluna.messageTransformer.transform(
                     session,
-                    elements
+
+                    elements,
+                    config.model
                 )
             const selectImages = config.imageOutput
-                ? (
-                      transformedMessage.additional_kwargs?.[
-                          'images'
-                      ] as string[]
-                  )?.map((base64) => h.image(base64))
+                ? (typeof transformedMessage.content === 'string'
+                      ? []
+                      : transformedMessage.content.filter((item) =>
+                            isMessageContentImageUrl(item)
+                        )
+                  )?.map((part) =>
+                      h.image(
+                          typeof part.image_url === 'string'
+                              ? part.image_url
+                              : part.image_url.url
+                      )
+                  )
                 : []
 
             if (!model) return '没有加载模型'
@@ -108,8 +120,7 @@ export function apply(ctx: Context, config: Config) {
                 new HumanMessage({
                     content: transformedMessage.content,
                     name: transformedMessage.name,
-                    id: session.userId,
-                    additional_kwargs: transformedMessage.additional_kwargs
+                    id: session.userId
                 })
             ])
 
