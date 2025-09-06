@@ -41,19 +41,19 @@
   },
   "homepage": "https://github.com/ChatLunaLab/smash-or-pass-ai#readme",
   "dependencies": {
-    "@langchain/core": "^0.3.43"
+    "@langchain/core": "0.3.62"
   },
   "resolutions": {
-    "@langchain/core": "0.3.43",
+    "@langchain/core": "0.3.62",
     "js-tiktoken": "npm:@dingyi222666/js-tiktoken@^1.0.19"
   },
   "overrides": {
-    "@langchain/core": "0.3.43",
+    "@langchain/core": "0.3.62",
     "js-tiktoken": "npm:@dingyi222666/js-tiktoken@^1.0.19"
   },
   "pnpm": {
     "overrides": {
-      "@langchain/core": "0.3.43",
+      "@langchain/core": "0.3.62",
       "js-tiktoken": "npm:@dingyi222666/js-tiktoken@^1.0.19"
     }
   },
@@ -78,7 +78,7 @@
   },
   "peerDependencies": {
     "koishi": "^4.18.7",
-    "koishi-plugin-chatluna": "^1.2.0"
+    "koishi-plugin-chatluna": "^1.3.0-alpha.23"
   },
   "engines": {
     "node": ">=18.0.0"

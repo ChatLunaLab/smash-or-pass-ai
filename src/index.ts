@@ -90,10 +90,10 @@ export function apply(ctx: Context, config: Config) {
             const transformedMessage =
                 await ctx.chatluna.messageTransformer.transform(
                     session,
-
                     elements,
                     config.model
                 )
+
             const selectImages = config.imageOutput
                 ? (typeof transformedMessage.content === 'string'
                       ? []
