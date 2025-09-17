@@ -1,66 +1,19 @@
 import { Context, h, Schema } from 'koishi'
-import { PlatformService } from 'koishi-plugin-chatluna/llm-core/platform/service'
-import { ModelType } from 'koishi-plugin-chatluna/llm-core/platform/types'
-import { parseRawModelName } from 'koishi-plugin-chatluna/llm-core/utils/count_tokens'
 import { ChatLunaChatModel } from 'koishi-plugin-chatluna/llm-core/platform/model'
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
+import { modelSchema } from 'koishi-plugin-chatluna/utils/schema'
 import {
     getMessageContent,
     isMessageContentImageUrl
 } from 'koishi-plugin-chatluna/utils/string'
-
-type ParseResult = {
-    verdict: string
-    rating: number
-    explanation: string
-} | null
-
-const tryParse = (text: string): ParseResult => {
-    try {
-        return JSON.parse(text.trim())
-    } catch {
-        return null
-    }
-}
-
-const extractors = [
-    (text: string) => text.trim(),
-    (text: string) =>
-        text.replace(/```(?:json|JSON)?\s*/g, '').replace(/```\s*$/g, ''),
-    (text: string) => {
-        const start = text.indexOf('{'),
-            end = text.lastIndexOf('}')
-        return start !== -1 && end !== -1 && start < end
-            ? text.substring(start, end + 1)
-            : text
-    },
-    (text: string) => {
-        const start = text.indexOf('{')
-        if (start === -1) return text
-        let count = 0,
-            end = -1
-        for (let i = start; i < text.length; i++) {
-            if (text[i] === '{') count++
-            else if (text[i] === '}' && --count === 0) {
-                end = i
-                break
-            }
-        }
-        return end !== -1 ? text.substring(start, end + 1) : text
-    }
-]
+import { ComputedRef } from 'koishi-plugin-chatluna'
 
 export function apply(ctx: Context, config: Config) {
-    let model: ChatLunaChatModel
+    let model: ComputedRef<ChatLunaChatModel>
 
     const loadModel = async () => {
-        const [platform, modelName] = parseRawModelName(config.model)
-        await ctx.chatluna.awaitLoadPlatform(platform)
-        model = await ctx.chatluna.createChatModel(platform, modelName)
+        model = await ctx.chatluna.createChatModel(config.model)
     }
-
-    const getModelNames = (service: PlatformService) =>
-        service.getAllModels(ModelType.llm).map((m) => Schema.const(m))
 
     const parseLLMResult = (result: string): ParseResult => {
         for (const extractor of extractors) {
@@ -109,13 +62,14 @@ export function apply(ctx: Context, config: Config) {
                   )
                 : []
 
-            if (!model) return '没有加载模型'
+            if (!model.value)
+                return '没有加载模型。请等待模型适配器加载成功，或检查你的日志。'
 
             const prompt =
                 config.prompt +
                 (config.safeMode ? `\n\n${config.safeModePrompt}` : '')
 
-            const result = await model.invoke([
+            const result = await model.value.invoke([
                 new SystemMessage(prompt),
                 new HumanMessage({
                     content: transformedMessage.content,
@@ -144,15 +98,52 @@ export function apply(ctx: Context, config: Config) {
         }
     )
 
-    const updateSchema = (service: PlatformService) => {
-        ctx.schema.set('model', Schema.union(getModelNames(service)))
+    modelSchema(ctx)
+    ctx.on('ready', async () => {
         loadModel()
-    }
-
-    ctx.on('chatluna/model-added', updateSchema)
-    ctx.on('chatluna/model-removed', updateSchema)
-    ctx.on('ready', () => updateSchema(ctx.chatluna.platform))
+    })
 }
+
+type ParseResult = {
+    verdict: string
+    rating: number
+    explanation: string
+} | null
+
+const tryParse = (text: string): ParseResult => {
+    try {
+        return JSON.parse(text.trim())
+    } catch {
+        return null
+    }
+}
+
+const extractors = [
+    (text: string) => text.trim(),
+    (text: string) =>
+        text.replace(/```(?:json|JSON)?\s*/g, '').replace(/```\s*$/g, ''),
+    (text: string) => {
+        const start = text.indexOf('{'),
+            end = text.lastIndexOf('}')
+        return start !== -1 && end !== -1 && start < end
+            ? text.substring(start, end + 1)
+            : text
+    },
+    (text: string) => {
+        const start = text.indexOf('{')
+        if (start === -1) return text
+        let count = 0,
+            end = -1
+        for (let i = start; i < text.length; i++) {
+            if (text[i] === '{') count++
+            else if (text[i] === '}' && --count === 0) {
+                end = i
+                break
+            }
+        }
+        return end !== -1 ? text.substring(start, end + 1) : text
+    }
+]
 
 export interface Config {
     model: string
